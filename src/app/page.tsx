@@ -9,10 +9,10 @@ export default function Home() {
   const [quality, setQuality] = useState(90);
   const [originalSize, setOriginalSize] = useState<string>("");
   const [webpSize, setWebpSize] = useState<string>("");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dropZoneRef = useRef<HTMLDivElement>(null);
 
-  // 格式化文件大小
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return "0 Bytes";
     const k = 1024;
@@ -21,7 +21,6 @@ export default function Home() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
-  // 转换图片为WebP
   const convertToWebP = async (file: File, quality: number) => {
     const img = new Image();
     const reader = new FileReader();
@@ -44,6 +43,10 @@ export default function Home() {
             canvas.toBlob(
               (blob) => {
                 if (blob) {
+                  // 清除之前的 URL
+                  if (webpImage) {
+                    URL.revokeObjectURL(webpImage);
+                  }
                   const url = URL.createObjectURL(blob);
                   setWebpImage(url);
                   setWebpSize(formatFileSize(blob.size));
@@ -60,14 +63,21 @@ export default function Home() {
     reader.readAsDataURL(file);
   };
 
-  // 处理文件选择
   const handleFileSelect = (file: File) => {
     if (!file.type.startsWith("image/")) {
       alert("请选择图片文件");
       return;
     }
+    setSelectedFile(file);
     convertToWebP(file, quality);
   };
+
+  // 当 quality 改变时重新转换图片
+  useEffect(() => {
+    if (selectedFile) {
+      convertToWebP(selectedFile, quality);
+    }
+  }, [quality]);
 
   // 处理拖放
   useEffect(() => {
@@ -102,9 +112,17 @@ export default function Home() {
       dropZone.removeEventListener("dragleave", handleDragLeave);
       dropZone.removeEventListener("drop", handleDrop);
     };
-  }, [quality]);
+  }, []);
 
-  // 下载WebP图片
+  // 清理 URL 对象
+  useEffect(() => {
+    return () => {
+      if (webpImage) {
+        URL.revokeObjectURL(webpImage);
+      }
+    };
+  }, [webpImage]);
+
   const downloadWebP = () => {
     if (webpImage) {
       const link = document.createElement("a");
