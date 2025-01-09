@@ -1,5 +1,9 @@
+// src/app/api/convert-to-webp/route.ts
 import { NextResponse } from "next/server";
 import sharp from "sharp";
+
+// 配置 Edge Runtime
+export const runtime = "edge";
 
 export async function POST(request: Request) {
   try {
