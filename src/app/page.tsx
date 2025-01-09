@@ -1,95 +1,173 @@
-import Image from "next/image";
+"use client";
+
+import { useState, useRef, useEffect } from "react";
 import styles from "./page.module.css";
 
 export default function Home() {
-  return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol>
-          <li>
-            Get started by editing <code>src/app/page.tsx</code>.
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [originalImage, setOriginalImage] = useState<string | null>(null);
+  const [webpImage, setWebpImage] = useState<string | null>(null);
+  const [quality, setQuality] = useState(90);
+  const [originalSize, setOriginalSize] = useState<string>("");
+  const [webpSize, setWebpSize] = useState<string>("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const dropZoneRef = useRef<HTMLDivElement>(null);
 
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.secondary}
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className={styles.footer}>
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
+  // 格式化文件大小
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return "0 Bytes";
+    const k = 1024;
+    const sizes = ["Bytes", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+  };
+
+  // 转换图片为WebP
+  const convertToWebP = async (file: File, quality: number) => {
+    const img = new Image();
+    const reader = new FileReader();
+
+    reader.onload = function (e) {
+      if (e.target?.result) {
+        img.src = e.target.result as string;
+        setOriginalImage(e.target.result as string);
+        setOriginalSize(formatFileSize(file.size));
+
+        img.onload = function () {
+          const canvas = document.createElement("canvas");
+          canvas.width = img.width;
+          canvas.height = img.height;
+
+          const ctx = canvas.getContext("2d");
+          if (ctx) {
+            ctx.drawImage(img, 0, 0);
+
+            canvas.toBlob(
+              (blob) => {
+                if (blob) {
+                  const url = URL.createObjectURL(blob);
+                  setWebpImage(url);
+                  setWebpSize(formatFileSize(blob.size));
+                }
+              },
+              "image/webp",
+              quality / 100
+            );
+          }
+        };
+      }
+    };
+
+    reader.readAsDataURL(file);
+  };
+
+  // 处理文件选择
+  const handleFileSelect = (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      alert("请选择图片文件");
+      return;
+    }
+    convertToWebP(file, quality);
+  };
+
+  // 处理拖放
+  useEffect(() => {
+    const dropZone = dropZoneRef.current;
+    if (!dropZone) return;
+
+    const handleDragOver = (e: DragEvent) => {
+      e.preventDefault();
+      dropZone.classList.add(styles.dragOver);
+    };
+
+    const handleDragLeave = (e: DragEvent) => {
+      e.preventDefault();
+      dropZone.classList.remove(styles.dragOver);
+    };
+
+    const handleDrop = (e: DragEvent) => {
+      e.preventDefault();
+      dropZone.classList.remove(styles.dragOver);
+      const files = e.dataTransfer?.files;
+      if (files?.length) {
+        handleFileSelect(files[0]);
+      }
+    };
+
+    dropZone.addEventListener("dragover", handleDragOver);
+    dropZone.addEventListener("dragleave", handleDragLeave);
+    dropZone.addEventListener("drop", handleDrop);
+
+    return () => {
+      dropZone.removeEventListener("dragover", handleDragOver);
+      dropZone.removeEventListener("dragleave", handleDragLeave);
+      dropZone.removeEventListener("drop", handleDrop);
+    };
+  }, [quality]);
+
+  // 下载WebP图片
+  const downloadWebP = () => {
+    if (webpImage) {
+      const link = document.createElement("a");
+      link.href = webpImage;
+      link.download = "converted.webp";
+      link.click();
+    }
+  };
+
+  return (
+    <main className={styles.main}>
+      <h1 className={styles.title}>图片转WebP转换器</h1>
+
+      <div
+        ref={dropZoneRef}
+        className={styles.uploadSection}
+        onClick={() => fileInputRef.current?.click()}
+      >
+        <input
+          type="file"
+          ref={fileInputRef}
+          accept="image/*"
+          onChange={(e) =>
+            e.target.files?.[0] && handleFileSelect(e.target.files[0])
+          }
+          style={{ display: "none" }}
+        />
+        <p>点击或拖放图片到此处</p>
+      </div>
+
+      <div className={styles.qualityControl}>
+        <label>
+          压缩质量: {quality}%
+          <input
+            type="range"
+            min="0"
+            max="100"
+            value={quality}
+            onChange={(e) => setQuality(Number(e.target.value))}
           />
-          Learn
-        </a>
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+        </label>
+      </div>
+
+      <div className={styles.previewSection}>
+        {originalImage && (
+          <div className={styles.previewBox}>
+            <h3>原始图片</h3>
+            <img src={originalImage} alt="原始图片" />
+            <p>大小: {originalSize}</p>
+          </div>
+        )}
+
+        {webpImage && (
+          <div className={styles.previewBox}>
+            <h3>WebP预览</h3>
+            <img src={webpImage} alt="WebP预览" />
+            <p>大小: {webpSize}</p>
+            <button onClick={downloadWebP} className={styles.downloadButton}>
+              下载WebP
+            </button>
+          </div>
+        )}
+      </div>
+    </main>
   );
 }
