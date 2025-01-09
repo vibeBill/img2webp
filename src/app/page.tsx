@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect } from "react";
 import styles from "./page.module.css";
-import { saveAs } from "file-saver"; // 引入 file-saver 库
 
 export default function Home() {
   const [originalImage, setOriginalImage] = useState<string | null>(null);
@@ -129,7 +128,17 @@ export default function Home() {
       fetch(webpImage)
         .then((response) => response.blob())
         .then((blob) => {
-          saveAs(blob, "converted.webp"); // 使用 file-saver 下载文件
+          // 创建一个新的 Blob 对象，明确设置 MIME 类型为 image/webp
+          const newBlob = new Blob([blob], { type: "image/webp" });
+
+          // 创建一个下载链接
+          const link = document.createElement("a");
+          link.href = URL.createObjectURL(newBlob);
+          link.download = "converted.webp"; // 强制文件名以 .webp 结尾
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(link.href);
         });
     }
   };
