@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import styles from "./page.module.css";
+import { saveAs } from "file-saver"; // 引入 file-saver 库
 
 export default function Home() {
   const [originalImage, setOriginalImage] = useState<string | null>(null);
@@ -125,10 +126,11 @@ export default function Home() {
 
   const downloadWebP = () => {
     if (webpImage) {
-      const link = document.createElement("a");
-      link.href = webpImage;
-      link.download = "converted.webp";
-      link.click();
+      fetch(webpImage)
+        .then((response) => response.blob())
+        .then((blob) => {
+          saveAs(blob, "converted.webp"); // 使用 file-saver 下载文件
+        });
     }
   };
 
