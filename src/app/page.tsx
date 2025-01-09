@@ -22,28 +22,45 @@ export default function Home() {
   };
 
   const convertToWebP = async (file: File, quality: number) => {
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("quality", quality.toString());
+    const img = new Image();
+    const reader = new FileReader();
 
-    try {
-      const response = await fetch("/api/convert-to-webp", {
-        method: "POST",
-        body: formData,
-      });
+    reader.onload = function (e) {
+      if (e.target?.result) {
+        img.src = e.target.result as string;
+        setOriginalImage(e.target.result as string);
+        setOriginalSize(formatFileSize(file.size));
 
-      if (!response.ok) {
-        throw new Error("Failed to convert image");
+        img.onload = function () {
+          const canvas = document.createElement("canvas");
+          canvas.width = img.width;
+          canvas.height = img.height;
+
+          const ctx = canvas.getContext("2d");
+          if (ctx) {
+            ctx.drawImage(img, 0, 0);
+
+            canvas.toBlob(
+              (blob) => {
+                if (blob) {
+                  // 清除之前的 URL
+                  if (webpImage) {
+                    URL.revokeObjectURL(webpImage);
+                  }
+                  const url = URL.createObjectURL(blob);
+                  setWebpImage(url);
+                  setWebpSize(formatFileSize(blob.size));
+                }
+              },
+              "image/webp",
+              quality / 100
+            );
+          }
+        };
       }
+    };
 
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      setWebpImage(url);
-      setWebpSize(formatFileSize(blob.size));
-    } catch (error) {
-      console.error("Error converting image:", error);
-      alert("Error converting image to WebP");
-    }
+    reader.readAsDataURL(file);
   };
 
   const handleFileSelect = (file: File) => {
@@ -52,17 +69,17 @@ export default function Home() {
       return;
     }
     setSelectedFile(file);
-    setOriginalImage(URL.createObjectURL(file));
-    setOriginalSize(formatFileSize(file.size));
     convertToWebP(file, quality);
   };
 
+  // 当 quality 改变时重新转换图片
   useEffect(() => {
     if (selectedFile) {
       convertToWebP(selectedFile, quality);
     }
   }, [quality]);
 
+  // 处理拖放
   useEffect(() => {
     const dropZone = dropZoneRef.current;
     if (!dropZone) return;
@@ -97,6 +114,7 @@ export default function Home() {
     };
   }, []);
 
+  // 清理 URL 对象
   useEffect(() => {
     return () => {
       if (webpImage) {
@@ -110,9 +128,7 @@ export default function Home() {
       const link = document.createElement("a");
       link.href = webpImage;
       link.download = "converted.webp";
-      document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link);
     }
   };
 
