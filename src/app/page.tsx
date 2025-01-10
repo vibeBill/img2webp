@@ -5,13 +5,27 @@ import styles from "./page.module.css";
 
 export default function Home() {
   const [originalImage, setOriginalImage] = useState<string | null>(null);
-  const [webpImage, setWebpImage] = useState<string | null>(null);
+  const [convertedImage, setConvertedImage] = useState<string | null>(null);
   const [quality, setQuality] = useState(90);
   const [originalSize, setOriginalSize] = useState<string>("");
-  const [webpSize, setWebpSize] = useState<string>("");
+  const [convertedSize, setConvertedSize] = useState<string>("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isWebPSupported, setIsWebPSupported] = useState<boolean>(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dropZoneRef = useRef<HTMLDivElement>(null);
+
+  // 检测浏览器是否支持 WebP
+  useEffect(() => {
+    const checkWebPSupport = () => {
+      const img = new Image();
+      img.onload = () => setIsWebPSupported(true);
+      img.onerror = () => setIsWebPSupported(false);
+      img.src =
+        "data:image/webp;base64,UklGRhoAAABXRUJQVlA4TA0AAAAvAAAAEAcQERGIiP4HAA==";
+    };
+
+    checkWebPSupport();
+  }, []);
 
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return "0 Bytes";
@@ -21,7 +35,7 @@ export default function Home() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
-  const convertToWebP = async (file: File, quality: number) => {
+  const convertImage = async (file: File, quality: number) => {
     const img = new Image();
     const reader = new FileReader();
 
@@ -40,19 +54,20 @@ export default function Home() {
           if (ctx) {
             ctx.drawImage(img, 0, 0);
 
+            const format = isWebPSupported ? "image/webp" : "image/jpeg";
             canvas.toBlob(
               (blob) => {
                 if (blob) {
                   // 清除之前的 URL
-                  if (webpImage) {
-                    URL.revokeObjectURL(webpImage);
+                  if (convertedImage) {
+                    URL.revokeObjectURL(convertedImage);
                   }
                   const url = URL.createObjectURL(blob);
-                  setWebpImage(url);
-                  setWebpSize(formatFileSize(blob.size));
+                  setConvertedImage(url);
+                  setConvertedSize(formatFileSize(blob.size));
                 }
               },
-              "image/webp",
+              format,
               quality / 100
             );
           }
@@ -69,13 +84,13 @@ export default function Home() {
       return;
     }
     setSelectedFile(file);
-    convertToWebP(file, quality);
+    convertImage(file, quality);
   };
 
   // 当 quality 改变时重新转换图片
   useEffect(() => {
     if (selectedFile) {
-      convertToWebP(selectedFile, quality);
+      convertImage(selectedFile, quality);
     }
   }, [quality]);
 
@@ -117,24 +132,33 @@ export default function Home() {
   // 清理 URL 对象
   useEffect(() => {
     return () => {
-      if (webpImage) {
-        URL.revokeObjectURL(webpImage);
+      if (convertedImage) {
+        URL.revokeObjectURL(convertedImage);
       }
     };
-  }, [webpImage]);
+  }, [convertedImage]);
 
-  const downloadWebP = () => {
-    if (webpImage) {
+  const downloadImage = () => {
+    if (convertedImage && selectedFile) {
+      const originalFileName = selectedFile.name;
+      const fileNameWithoutExtension = originalFileName
+        .split(".")
+        .slice(0, -1)
+        .join(".");
+      const newFileName = isWebPSupported
+        ? `${fileNameWithoutExtension}.webp`
+        : `${fileNameWithoutExtension}.jpg`;
+
       const link = document.createElement("a");
-      link.href = webpImage;
-      link.download = "converted.webp";
+      link.href = convertedImage;
+      link.download = newFileName;
       link.click();
     }
   };
 
   return (
     <main className={styles.main}>
-      <h1 className={styles.title}>图片转WebP转换器</h1>
+      <h1 className={styles.title}>图片转换器</h1>
 
       <div
         ref={dropZoneRef}
@@ -175,13 +199,13 @@ export default function Home() {
           </div>
         )}
 
-        {webpImage && (
+        {convertedImage && (
           <div className={styles.previewBox}>
-            <h3>WebP预览</h3>
-            <img src={webpImage} alt="WebP预览" />
-            <p>大小: {webpSize}</p>
-            <button onClick={downloadWebP} className={styles.downloadButton}>
-              下载WebP
+            <h3>{isWebPSupported ? "WebP预览" : "JPEG预览"}</h3>
+            <img src={convertedImage} alt="转换后的图片" />
+            <p>大小: {convertedSize}</p>
+            <button onClick={downloadImage} className={styles.downloadButton}>
+              下载{isWebPSupported ? "WebP" : "JPEG"}
             </button>
           </div>
         )}
