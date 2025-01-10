@@ -17,14 +17,13 @@ export default function Home() {
   // 检测浏览器是否支持 WebP
   useEffect(() => {
     const checkWebPSupport = () => {
-      const img = new Image();
-      img.onload = () => setIsWebPSupported(true);
-      img.onerror = () => setIsWebPSupported(false);
-      img.src =
-        "data:image/webp;base64,UklGRhoAAABXRUJQVlA4TA0AAAAvAAAAEAcQERGIiP4HAA==";
+      const elem = document.createElement("canvas");
+      if (elem.getContext && elem.getContext("2d")) {
+        return elem.toDataURL("image/webp").indexOf("data:image/webp") === 0;
+      }
+      return false;
     };
-
-    checkWebPSupport();
+    setIsWebPSupported(checkWebPSupport());
   }, []);
 
   const formatFileSize = (bytes: number): string => {
