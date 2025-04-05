@@ -3,13 +3,33 @@
 import { useState, useRef, useEffect } from "react";
 import styles from "./page.module.css";
 
+// 支持的图片格式
+type ImageFormat = "webp" | "jpeg" | "png" | "gif";
+
+// 格式的MIME类型映射
+const formatMimeTypes: Record<ImageFormat, string> = {
+  webp: "image/webp",
+  jpeg: "image/jpeg",
+  png: "image/png",
+  gif: "image/gif",
+};
+
+// 格式的文件扩展名映射
+const formatExtensions: Record<ImageFormat, string> = {
+  webp: ".webp",
+  jpeg: ".jpg",
+  png: ".png",
+  gif: ".gif",
+};
+
 export default function Home() {
   const [originalImage, setOriginalImage] = useState<string | null>(null);
-  const [webpImage, setWebpImage] = useState<string | null>(null);
+  const [convertedImage, setConvertedImage] = useState<string | null>(null);
   const [quality, setQuality] = useState(90);
   const [originalSize, setOriginalSize] = useState<string>("");
-  const [webpSize, setWebpSize] = useState<string>("");
+  const [convertedSize, setConvertedSize] = useState<string>("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [targetFormat, setTargetFormat] = useState<ImageFormat>("webp");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dropZoneRef = useRef<HTMLDivElement>(null);
 
@@ -21,7 +41,11 @@ export default function Home() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
-  const convertToWebP = async (file: File, quality: number) => {
+  const convertImage = async (
+    file: File,
+    quality: number,
+    format: ImageFormat
+  ) => {
     const img = new Image();
     const reader = new FileReader();
 
@@ -40,20 +64,23 @@ export default function Home() {
           if (ctx) {
             ctx.drawImage(img, 0, 0);
 
+            // 根据格式不同，有些格式不支持质量参数
+            const useQuality = format === "webp" || format === "jpeg";
+
             canvas.toBlob(
               (blob) => {
                 if (blob) {
                   // 清除之前的 URL
-                  if (webpImage) {
-                    URL.revokeObjectURL(webpImage);
+                  if (convertedImage) {
+                    URL.revokeObjectURL(convertedImage);
                   }
                   const url = URL.createObjectURL(blob);
-                  setWebpImage(url);
-                  setWebpSize(formatFileSize(blob.size));
+                  setConvertedImage(url);
+                  setConvertedSize(formatFileSize(blob.size));
                 }
               },
-              "image/webp",
-              quality / 100
+              formatMimeTypes[format],
+              useQuality ? quality / 100 : undefined
             );
           }
         };
@@ -69,15 +96,15 @@ export default function Home() {
       return;
     }
     setSelectedFile(file);
-    convertToWebP(file, quality);
+    convertImage(file, quality, targetFormat);
   };
 
-  // 当 quality 改变时重新转换图片
+  // 当 quality 或 targetFormat 改变时重新转换图片
   useEffect(() => {
     if (selectedFile) {
-      convertToWebP(selectedFile, quality);
+      convertImage(selectedFile, quality, targetFormat);
     }
-  }, [quality]);
+  }, [quality, targetFormat]);
 
   // 处理拖放
   useEffect(() => {
@@ -117,24 +144,26 @@ export default function Home() {
   // 清理 URL 对象
   useEffect(() => {
     return () => {
-      if (webpImage) {
-        URL.revokeObjectURL(webpImage);
+      if (convertedImage) {
+        URL.revokeObjectURL(convertedImage);
       }
     };
-  }, [webpImage]);
+  }, [convertedImage]);
 
-  const downloadWebP = () => {
-    if (webpImage) {
+  const downloadConvertedImage = () => {
+    if (convertedImage && selectedFile) {
       const link = document.createElement("a");
-      link.href = webpImage;
-      link.download = "converted.webp";
+      link.href = convertedImage;
+      // 基于原始文件名生成新文件名
+      const originalName = selectedFile.name.split(".").slice(0, -1).join(".");
+      link.download = originalName + formatExtensions[targetFormat];
       link.click();
     }
   };
 
   return (
     <main className={styles.main}>
-      <h1 className={styles.title}>图片转WebP转换器</h1>
+      <h1 className={styles.title}>图片格式转换器</h1>
 
       <div
         ref={dropZoneRef}
@@ -153,17 +182,34 @@ export default function Home() {
         <p>点击或拖放图片到此处</p>
       </div>
 
-      <div className={styles.qualityControl}>
-        <label>
-          压缩质量: {quality}%
-          <input
-            type="range"
-            min="0"
-            max="100"
-            value={quality}
-            onChange={(e) => setQuality(Number(e.target.value))}
-          />
-        </label>
+      <div className={styles.controlSection}>
+        <div className={styles.formatControl}>
+          <label>目标格式：</label>
+          <select
+            value={targetFormat}
+            onChange={(e) => setTargetFormat(e.target.value as ImageFormat)}
+          >
+            <option value="webp">WebP</option>
+            <option value="jpeg">JPEG</option>
+            <option value="png">PNG</option>
+            <option value="gif">GIF</option>
+          </select>
+        </div>
+
+        {(targetFormat === "webp" || targetFormat === "jpeg") && (
+          <div className={styles.qualityControl}>
+            <label>
+              压缩质量: {quality}%
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value={quality}
+                onChange={(e) => setQuality(Number(e.target.value))}
+              />
+            </label>
+          </div>
+        )}
       </div>
 
       <div className={styles.previewSection}>
@@ -175,13 +221,19 @@ export default function Home() {
           </div>
         )}
 
-        {webpImage && (
+        {convertedImage && (
           <div className={styles.previewBox}>
-            <h3>WebP预览</h3>
-            <img src={webpImage} alt="WebP预览" />
-            <p>大小: {webpSize}</p>
-            <button onClick={downloadWebP} className={styles.downloadButton}>
-              下载WebP
+            <h3>{targetFormat.toUpperCase()} 预览</h3>
+            <img
+              src={convertedImage}
+              alt={`${targetFormat.toUpperCase()} 预览`}
+            />
+            <p>大小: {convertedSize}</p>
+            <button
+              onClick={downloadConvertedImage}
+              className={styles.downloadButton}
+            >
+              下载 {targetFormat.toUpperCase()}
             </button>
           </div>
         )}
