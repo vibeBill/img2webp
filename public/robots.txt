@@ -1,9 +1,0 @@
-# *
-User-agent: *
-Allow: /
-
-# Host
-Host: https://convert.bill-aurora.ip-ddns.com
-
-# Sitemaps
-Sitemap: https://convert.bill-aurora.ip-ddns.com/sitemap.xml
