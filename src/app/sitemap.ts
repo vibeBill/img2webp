@@ -5,12 +5,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     {
       url: "https://convert.bearbug.dpdns.org/",
       lastModified: new Date(),
-      alternates: {
-        languages: {
-          en: "https://convert.bearbug.dpdns.org/",
-          zh: "https://convert.bearbug.dpdns.org/zh/",
-        },
-      },
+      changeFrequency: "daily",
+      priority: 1,
     },
   ];
 }
