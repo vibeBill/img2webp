@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import styles from "./page.module.css";
+import styles from "../page.module.css";
 
 // 支持的图片格式
 type ImageFormat = "webp" | "jpeg" | "png" | "gif";
