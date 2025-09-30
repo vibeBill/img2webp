@@ -1,12 +1,11 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import styles from "../page.module.css";
+import { useTranslations } from "next-intl";
+import styles from "./page.module.css";
 
-// 支持的图片格式
 type ImageFormat = "webp" | "jpeg" | "png" | "gif";
 
-// 格式的MIME类型映射
 const formatMimeTypes: Record<ImageFormat, string> = {
   webp: "image/webp",
   jpeg: "image/jpeg",
@@ -14,7 +13,6 @@ const formatMimeTypes: Record<ImageFormat, string> = {
   gif: "image/gif",
 };
 
-// 格式的文件扩展名映射
 const formatExtensions: Record<ImageFormat, string> = {
   webp: ".webp",
   jpeg: ".jpg",
@@ -32,6 +30,7 @@ export default function Home() {
   const [targetFormat, setTargetFormat] = useState<ImageFormat>("webp");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dropZoneRef = useRef<HTMLDivElement>(null);
+  const t = useTranslations("HomePage");
 
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return "0 Bytes";
@@ -64,13 +63,11 @@ export default function Home() {
           if (ctx) {
             ctx.drawImage(img, 0, 0);
 
-            // 根据格式不同，有些格式不支持质量参数
             const useQuality = format === "webp" || format === "jpeg";
 
             canvas.toBlob(
               (blob) => {
                 if (blob) {
-                  // 清除之前的 URL
                   if (convertedImage) {
                     URL.revokeObjectURL(convertedImage);
                   }
@@ -92,14 +89,13 @@ export default function Home() {
 
   const handleFileSelect = (file: File) => {
     if (!file.type.startsWith("image/")) {
-      alert("please select an image file");
+      alert(t("alert_select_image"));
       return;
     }
     setSelectedFile(file);
     convertImage(file, quality, targetFormat);
   };
 
-  // 当 quality 或 targetFormat 改变时重新转换图片
   useEffect(() => {
     if (selectedFile) {
       convertImage(selectedFile, quality, targetFormat);
@@ -163,7 +159,7 @@ export default function Home() {
 
   return (
     <main className={styles.main}>
-      <h1 className={styles.title}>Image Convertor</h1>
+      <h1 className={styles.title}>{t("title")}</h1>
 
       <div
         ref={dropZoneRef}
@@ -179,12 +175,12 @@ export default function Home() {
           }
           style={{ display: "none" }}
         />
-        <p>Click to select or drag and drop an image here</p>
+        <p>{t("upload_prompt")}</p>
       </div>
 
       <div className={styles.controlSection}>
         <div className={styles.formatControl}>
-          <label>Target format:</label>
+          <label>{t("target_format_label")}</label>
           <select
             value={targetFormat}
             onChange={(e) => setTargetFormat(e.target.value as ImageFormat)}
@@ -199,7 +195,7 @@ export default function Home() {
         {(targetFormat === "webp" || targetFormat === "jpeg") && (
           <div className={styles.qualityControl}>
             <label>
-              Compression quality: {quality}%
+              {t("quality_label")}: {quality}%
               <input
                 type="range"
                 min="0"
@@ -215,25 +211,33 @@ export default function Home() {
       <div className={styles.previewSection}>
         {originalImage && (
           <div className={styles.previewBox}>
-            <h3>original picture</h3>
-            <img src={originalImage} alt="original picture" />
-            <p>size: {originalSize}</p>
+            <h3>{t("original_image_header")}</h3>
+            <img src={originalImage} alt={t("original_image_header")} />
+            <p>
+              {t("size_label")}: {originalSize}
+            </p>
           </div>
         )}
 
         {convertedImage && (
           <div className={styles.previewBox}>
-            <h3>{targetFormat.toUpperCase()} preview</h3>
+            <h3>
+              {targetFormat.toUpperCase()} {t("preview_header_prefix")}
+            </h3>
             <img
               src={convertedImage}
-              alt={`${targetFormat.toUpperCase()} preview`}
+              alt={`${targetFormat.toUpperCase()} ${t(
+                "preview_header_prefix"
+              )}`}
             />
-            <p>size: {convertedSize}</p>
+            <p>
+              {t("size_label")}: {convertedSize}
+            </p>
             <button
               onClick={downloadConvertedImage}
               className={styles.downloadButton}
             >
-              download {targetFormat.toUpperCase()}
+              {t("download_button_prefix")} {targetFormat.toUpperCase()}
             </button>
           </div>
         )}

@@ -1,0 +1,13 @@
+{
+  "HomePage":{
+    "title": "Image Format Converter",
+    "upload_prompt": "Click or drag and drop an image here",
+    "target_format_label": "Target Format:",
+    "quality_label": "Compression Quality",
+    "original_image_header": "Original Image",
+    "preview_header_prefix": "Preview",
+    "size_label": "Size",
+    "download_button_prefix": "Download",
+    "alert_select_image": "Please select an image file"
+  }
+}
