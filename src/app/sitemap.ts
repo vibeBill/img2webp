@@ -10,7 +10,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       alternates: {
         languages: {
           "zh-CN": "https://convert.bearbug.dpdns.org",
-          "en-US": "https://convert.bearbug.dpdns.org/us",
+          "en-US": "https://convert.bearbug.dpdns.org/en",
           "x-default": "https://convert.bearbug.dpdns.org",
         },
       },
