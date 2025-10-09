@@ -1,9 +1,21 @@
 import { NextIntlClientProvider } from "next-intl";
-import { getMessages } from "next-intl/server";
+import { getMessages, getTranslations } from "next-intl/server";
 
 import "./globals.css";
+import { Metadata } from "next/types";
 
 export const runtime = "edge";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("Metadata");
+
+  return {
+    title: {
+      template: `%s | ${t("template")}`,
+      default: t("default"),
+    },
+  };
+}
 
 export default async function LocaleLayout({
   children,

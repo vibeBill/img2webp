@@ -1,4 +1,8 @@
 {
+  "Metadata":{
+    "template":"Mochi",
+    "default":"Mochi Converter"
+  },
   "HomePage":{
     "title": "Image Format Converter",
     "upload_prompt": "Click or drag and drop an image here",

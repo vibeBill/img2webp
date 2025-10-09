@@ -1,0 +1,21 @@
+.uploadSection {
+  border: 2px dashed #ccc;
+  padding: 3rem;
+  text-align: center;
+  border-radius: 16px;
+  cursor: pointer;
+  background: #fafafa;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  color: #000;
+}
+
+.uploadSection:hover {
+  border-color: #2196f3;
+  background: #e3f2fd;
+}
+
+.dragOver {
+  border-color: #2196f3;
+  background: #e3f2fd;
+}

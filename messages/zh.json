@@ -1,4 +1,8 @@
 {
+  "Metadata":{
+    "template":"麻薯",
+    "default":"麻薯转化器"
+  },
   "HomePage":{
     "title": "图片格式转换器",
     "upload_prompt": "点击或拖放图片到此处",

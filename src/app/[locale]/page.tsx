@@ -1,10 +1,13 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
-import styles from "./page.module.css";
+import styles from "./style.module.css";
 
-type ImageFormat = "webp" | "jpeg" | "png" | "gif";
+import type { ImageFormat } from "@/components/ConversionControls";
+import UploadArea from "@/components/UploadArea";
+import ConversionControls from "@/components/ConversionControls";
+import ImagePreview from "@/components/ImagePreview";
 
 const formatMimeTypes: Record<ImageFormat, string> = {
   webp: "image/webp",
@@ -28,8 +31,6 @@ export default function Home() {
   const [convertedSize, setConvertedSize] = useState<string>("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [targetFormat, setTargetFormat] = useState<ImageFormat>("webp");
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const dropZoneRef = useRef<HTMLDivElement>(null);
   const t = useTranslations("HomePage");
 
   const formatFileSize = (bytes: number): string => {
@@ -42,46 +43,43 @@ export default function Home() {
 
   const convertImage = async (
     file: File,
-    quality: number,
+    qualityValue: number,
     format: ImageFormat
   ) => {
     const img = new Image();
     const reader = new FileReader();
 
-    reader.onload = function (e) {
-      if (e.target?.result) {
-        img.src = e.target.result as string;
-        setOriginalImage(e.target.result as string);
-        setOriginalSize(formatFileSize(file.size));
+    reader.onload = (e) => {
+      if (!e.target?.result) return;
 
-        img.onload = function () {
-          const canvas = document.createElement("canvas");
-          canvas.width = img.width;
-          canvas.height = img.height;
+      img.src = e.target.result as string;
+      setOriginalImage(e.target.result as string);
+      setOriginalSize(formatFileSize(file.size));
 
-          const ctx = canvas.getContext("2d");
-          if (ctx) {
-            ctx.drawImage(img, 0, 0);
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
 
-            const useQuality = format === "webp" || format === "jpeg";
-
-            canvas.toBlob(
-              (blob) => {
-                if (blob) {
-                  if (convertedImage) {
-                    URL.revokeObjectURL(convertedImage);
-                  }
-                  const url = URL.createObjectURL(blob);
-                  setConvertedImage(url);
-                  setConvertedSize(formatFileSize(blob.size));
-                }
-              },
-              formatMimeTypes[format],
-              useQuality ? quality / 100 : undefined
-            );
-          }
-        };
-      }
+        ctx.drawImage(img, 0, 0);
+        const useQuality = format === "webp" || format === "jpeg";
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              if (convertedImage) {
+                URL.revokeObjectURL(convertedImage);
+              }
+              const url = URL.createObjectURL(blob);
+              setConvertedImage(url);
+              setConvertedSize(formatFileSize(blob.size));
+            }
+          },
+          formatMimeTypes[format],
+          useQuality ? qualityValue / 100 : undefined
+        );
+      };
     };
 
     reader.readAsDataURL(file);
@@ -93,51 +91,19 @@ export default function Home() {
       return;
     }
     setSelectedFile(file);
+    // Initial conversion
     convertImage(file, quality, targetFormat);
   };
 
+  // Re-run conversion when quality or format changes
   useEffect(() => {
     if (selectedFile) {
       convertImage(selectedFile, quality, targetFormat);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [quality, targetFormat]);
 
-  // 处理拖放
-  useEffect(() => {
-    const dropZone = dropZoneRef.current;
-    if (!dropZone) return;
-
-    const handleDragOver = (e: DragEvent) => {
-      e.preventDefault();
-      dropZone.classList.add(styles.dragOver);
-    };
-
-    const handleDragLeave = (e: DragEvent) => {
-      e.preventDefault();
-      dropZone.classList.remove(styles.dragOver);
-    };
-
-    const handleDrop = (e: DragEvent) => {
-      e.preventDefault();
-      dropZone.classList.remove(styles.dragOver);
-      const files = e.dataTransfer?.files;
-      if (files?.length) {
-        handleFileSelect(files[0]);
-      }
-    };
-
-    dropZone.addEventListener("dragover", handleDragOver);
-    dropZone.addEventListener("dragleave", handleDragLeave);
-    dropZone.addEventListener("drop", handleDrop);
-
-    return () => {
-      dropZone.removeEventListener("dragover", handleDragOver);
-      dropZone.removeEventListener("dragleave", handleDragLeave);
-      dropZone.removeEventListener("drop", handleDrop);
-    };
-  }, []);
-
-  // 清理 URL 对象
+  // Cleanup URL object on unmount or when a new one is created
   useEffect(() => {
     return () => {
       if (convertedImage) {
@@ -150,7 +116,6 @@ export default function Home() {
     if (convertedImage && selectedFile) {
       const link = document.createElement("a");
       link.href = convertedImage;
-      // 基于原始文件名生成新文件名
       const originalName = selectedFile.name.split(".").slice(0, -1).join(".");
       link.download = originalName + formatExtensions[targetFormat];
       link.click();
@@ -161,87 +126,27 @@ export default function Home() {
     <main className={styles.main}>
       <h1 className={styles.title}>{t("title")}</h1>
 
-      <div
-        ref={dropZoneRef}
-        className={styles.uploadSection}
-        onClick={() => fileInputRef.current?.click()}
-      >
-        <input
-          type="file"
-          ref={fileInputRef}
-          accept="image/*"
-          onChange={(e) =>
-            e.target.files?.[0] && handleFileSelect(e.target.files[0])
-          }
-          style={{ display: "none" }}
+      <UploadArea onFileSelect={handleFileSelect} t={t} />
+
+      {selectedFile && (
+        <ConversionControls
+          targetFormat={targetFormat}
+          onFormatChange={setTargetFormat}
+          quality={quality}
+          onQualityChange={setQuality}
+          t={t}
         />
-        <p>{t("upload_prompt")}</p>
-      </div>
+      )}
 
-      <div className={styles.controlSection}>
-        <div className={styles.formatControl}>
-          <label>{t("target_format_label")}</label>
-          <select
-            value={targetFormat}
-            onChange={(e) => setTargetFormat(e.target.value as ImageFormat)}
-          >
-            <option value="webp">WebP</option>
-            <option value="jpeg">JPEG</option>
-            <option value="png">PNG</option>
-            <option value="gif">GIF</option>
-          </select>
-        </div>
-
-        {(targetFormat === "webp" || targetFormat === "jpeg") && (
-          <div className={styles.qualityControl}>
-            <label>
-              {t("quality_label")}: {quality}%
-              <input
-                type="range"
-                min="0"
-                max="100"
-                value={quality}
-                onChange={(e) => setQuality(Number(e.target.value))}
-              />
-            </label>
-          </div>
-        )}
-      </div>
-
-      <div className={styles.previewSection}>
-        {originalImage && (
-          <div className={styles.previewBox}>
-            <h3>{t("original_image_header")}</h3>
-            <img src={originalImage} alt={t("original_image_header")} />
-            <p>
-              {t("size_label")}: {originalSize}
-            </p>
-          </div>
-        )}
-
-        {convertedImage && (
-          <div className={styles.previewBox}>
-            <h3>
-              {targetFormat.toUpperCase()} {t("preview_header_prefix")}
-            </h3>
-            <img
-              src={convertedImage}
-              alt={`${targetFormat.toUpperCase()} ${t(
-                "preview_header_prefix"
-              )}`}
-            />
-            <p>
-              {t("size_label")}: {convertedSize}
-            </p>
-            <button
-              onClick={downloadConvertedImage}
-              className={styles.downloadButton}
-            >
-              {t("download_button_prefix")} {targetFormat.toUpperCase()}
-            </button>
-          </div>
-        )}
-      </div>
+      <ImagePreview
+        originalImage={originalImage}
+        originalSize={originalSize}
+        convertedImage={convertedImage}
+        convertedSize={convertedSize}
+        targetFormat={targetFormat}
+        onDownload={downloadConvertedImage}
+        t={t}
+      />
     </main>
   );
 }

@@ -1,0 +1,33 @@
+.controlSection {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 2rem;
+}
+
+.formatControl,
+.qualityControl {
+  flex: 1;
+  min-width: 250px;
+}
+
+.formatControl label,
+.qualityControl label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.formatControl select {
+  width: 100%;
+  padding: 0.5rem;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+}
+
+.qualityControl input[type="range"] {
+  width: 100%;
+  margin-top: 0.5rem;
+}
