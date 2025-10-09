@@ -15,15 +15,8 @@ const intlMiddleware = createMiddleware(routing);
 export default function middleware(request: NextRequest) {
   if (process.env.NODE_ENV === "production") {
     const country = request.headers.get("cf-ipcountry")?.toUpperCase();
-    const { pathname } = request.nextUrl;
-    if (
-      pathname.startsWith("/_next") ||
-      pathname.startsWith("/api") ||
-      pathname.includes(".")
-    ) {
-      return NextResponse.next();
-    }
     if (country) {
+      const { pathname } = request.nextUrl;
       const expectedLocale =
         (country && GEO_LOCALE_MAP[country]) || FALLBACK_LOCALE_FOR_GEO;
 
@@ -59,5 +52,5 @@ export default function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!api|_next|_vercel|.*\\..*).*)"],
+  matcher: ["/", "/(zh|en)/:path*", "/((?!_next|_vercel|api|.*\\..*).*)"],
 };
