@@ -13,35 +13,39 @@ const FALLBACK_LOCALE_FOR_GEO = "en";
 const intlMiddleware = createMiddleware(routing);
 
 export default function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+  if (process.env.NODE_ENV === "production") {
+    const country = request.headers.get("cf-ipcountry")?.toUpperCase();
+    if (country) {
+      const { pathname } = request.nextUrl;
+      const expectedLocale =
+        (country && GEO_LOCALE_MAP[country]) || FALLBACK_LOCALE_FOR_GEO;
 
-  const country = request.headers.get("cf-ipcountry")?.toUpperCase();
-  const expectedLocale =
-    (country && GEO_LOCALE_MAP[country]) || FALLBACK_LOCALE_FOR_GEO;
+      const currentLocaleInPath = locales.find(
+        (locale) =>
+          pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`
+      );
 
-  const currentLocaleInPath = locales.find(
-    (locale) => pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`
-  );
+      const currentLocale = currentLocaleInPath || defaultLocale;
 
-  const currentLocale = currentLocaleInPath || defaultLocale;
+      if (currentLocale !== expectedLocale) {
+        let basePath = pathname;
+        if (currentLocaleInPath) {
+          basePath = pathname.replace(`/${currentLocaleInPath}`, "") || "/";
+        }
 
-  if (currentLocale !== expectedLocale) {
-    let basePath = pathname;
-    if (currentLocaleInPath) {
-      basePath = pathname.replace(`/${currentLocaleInPath}`, "") || "/";
+        let newPath;
+        if (expectedLocale === defaultLocale) {
+          newPath = basePath;
+        } else {
+          newPath = `/${expectedLocale}${basePath === "/" ? "" : basePath}`;
+        }
+
+        console.log(
+          `Redirecting: Geo=${country}, Path=${pathname} (${currentLocale}) -> ${newPath} (${expectedLocale})`
+        );
+        return NextResponse.redirect(new URL(newPath, request.url));
+      }
     }
-
-    let newPath;
-    if (expectedLocale === defaultLocale) {
-      newPath = basePath;
-    } else {
-      newPath = `/${expectedLocale}${basePath === "/" ? "" : basePath}`;
-    }
-
-    console.log(
-      `Redirecting: Geo=${country}, Path=${pathname} (${currentLocale}) -> ${newPath} (${expectedLocale})`
-    );
-    return NextResponse.redirect(new URL(newPath, request.url));
   }
 
   return intlMiddleware(request);
