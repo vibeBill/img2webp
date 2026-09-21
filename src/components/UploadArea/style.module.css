@@ -1,21 +1,31 @@
 .uploadSection {
-  border: 2px dashed #ccc;
-  padding: 3rem;
+  border: 1px dashed var(--line-strong);
+  padding: 3rem 1.5rem;
   text-align: center;
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   cursor: pointer;
-  background: #fafafa;
-  margin-bottom: 2rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-  color: #000;
+  background: var(--surface);
+  margin-bottom: var(--gap-lg);
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+  transition: border-color var(--fast) var(--ease),
+    background var(--fast) var(--ease), color var(--fast) var(--ease);
 }
 
 .uploadSection:hover {
-  border-color: #2196f3;
-  background: #e3f2fd;
+  border-color: var(--ink);
+  color: var(--ink);
+  background: var(--hover);
 }
 
 .dragOver {
-  border-color: #2196f3;
-  background: #e3f2fd;
+  border-color: var(--ink);
+  color: var(--ink);
+  background: var(--hover);
+}
+
+@media (max-width: 480px) {
+  .uploadSection {
+    padding: 2.25rem 1rem;
+  }
 }

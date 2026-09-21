@@ -3,14 +3,37 @@
     "template":"Mochi",
     "default":"Mochi Converter"
   },
+  "Nav":{
+    "convert": "Convert",
+    "crop": "Crop"
+  },
   "HomePage":{
     "title": "Image Format Converter",
+    "subtitle": "Convert and compress images entirely in your browser — nothing is uploaded",
     "upload_prompt": "Click or drag and drop an image here",
     "target_format_label": "Target Format:",
     "quality_label": "Compression Quality",
     "original_image_header": "Original Image",
     "preview_header_prefix": "Preview",
     "size_label": "Size",
+    "download_button_prefix": "Download",
+    "alert_select_image": "Please select an image file"
+  },
+  "CropPage":{
+    "title": "Image Cropper",
+    "upload_prompt": "Click or drag and drop an image here to start cropping",
+    "editor_header": "Crop Area",
+    "hint": "Drag the selection to move it, drag corners or edges to resize",
+    "free_ratio": "Free",
+    "ratio_label": "Aspect Ratio:",
+    "target_format_label": "Target Format:",
+    "quality_label": "Compression Quality",
+    "reset_button": "Reset selection",
+    "center_button": "Center",
+    "original_image_header": "Original Image",
+    "preview_header_prefix": "Crop Preview",
+    "size_label": "Size",
+    "dimension_label": "Dimensions",
     "download_button_prefix": "Download",
     "alert_select_image": "Please select an image file"
   }

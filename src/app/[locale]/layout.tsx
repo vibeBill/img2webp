@@ -3,6 +3,7 @@ import { getMessages, getTranslations } from "next-intl/server";
 
 import "./globals.css";
 import { Metadata } from "next/types";
+import Header from "@/components/Header";
 
 export const runtime = "edge";
 
@@ -31,6 +32,7 @@ export default async function LocaleLayout({
     <html lang={locale}>
       <body>
         <NextIntlClientProvider messages={messages}>
+          <Header />
           {children}
         </NextIntlClientProvider>
       </body>

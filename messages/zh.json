@@ -3,14 +3,37 @@
     "template":"麻薯",
     "default":"麻薯转化器"
   },
+  "Nav":{
+    "convert": "格式转换",
+    "crop": "图片裁剪"
+  },
   "HomePage":{
     "title": "图片格式转换器",
+    "subtitle": "在浏览器本地完成图片格式转换与压缩，图片不会上传到服务器",
     "upload_prompt": "点击或拖放图片到此处",
     "target_format_label": "目标格式：",
     "quality_label": "压缩质量",
     "original_image_header": "原始图片",
     "preview_header_prefix": "预览",
     "size_label": "大小",
+    "download_button_prefix": "下载",
+    "alert_select_image": "请选择图片文件"
+  },
+  "CropPage":{
+    "title": "图片裁剪工具",
+    "upload_prompt": "点击或拖放图片到此处开始裁剪",
+    "editor_header": "裁剪区域",
+    "hint": "拖动选框移动位置，拖动四角或四边调整大小",
+    "free_ratio": "自由裁剪",
+    "ratio_label": "裁剪比例：",
+    "target_format_label": "目标格式：",
+    "quality_label": "压缩质量",
+    "reset_button": "重置选框",
+    "center_button": "居中",
+    "original_image_header": "原始图片",
+    "preview_header_prefix": "裁剪预览",
+    "size_label": "大小",
+    "dimension_label": "尺寸",
     "download_button_prefix": "下载",
     "alert_select_image": "请选择图片文件"
   }

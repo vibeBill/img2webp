@@ -1,0 +1,231 @@
+.main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--gap-xl) 1.5rem 5rem;
+}
+
+.title {
+  text-align: center;
+  margin-bottom: 2rem;
+  font-size: 2rem;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gap-lg);
+  align-items: flex-start;
+  margin-bottom: var(--gap-lg);
+  padding: var(--gap-md);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+}
+
+.control {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-sm);
+  min-width: 200px;
+}
+
+.control label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--ink-soft);
+}
+
+.control select {
+  padding: 0.5rem 0.6rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  font-size: 0.9rem;
+}
+
+.control input[type="range"] {
+  width: 100%;
+}
+
+.ratioGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gap-xs);
+}
+
+.ratioButton {
+  padding: 0.35rem 0.7rem;
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+  transition: border-color var(--fast) var(--ease),
+    color var(--fast) var(--ease), background var(--fast) var(--ease);
+}
+
+.ratioButton:hover {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+.ratioButtonActive {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-contrast);
+}
+
+.ratioButtonActive:hover {
+  border-color: var(--accent);
+  color: var(--accent-contrast);
+}
+
+.actions {
+  display: flex;
+  gap: var(--gap-sm);
+  margin-left: auto;
+  align-self: flex-end;
+}
+
+.ghostButton {
+  padding: 0.45rem 0.9rem;
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  transition: border-color var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+
+.ghostButton:hover {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+.workspace {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--gap-lg);
+}
+
+.editorColumn {
+  flex: 1 1 60%;
+  min-width: 0;
+  display: flex;
+  justify-content: center;
+}
+
+.previewColumn {
+  flex: 1 1 40%;
+  min-width: 260px;
+  display: flex;
+  justify-content: center;
+  position: sticky;
+  top: var(--gap-lg);
+}
+
+.previewBox {
+  border: 1px solid var(--line);
+  padding: var(--gap-md);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  max-width: 100%;
+  width: 100%;
+}
+
+.previewBox h3 {
+  margin-bottom: var(--gap-md);
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.previewBox img {
+  max-width: 100%;
+  max-height: 400px;
+  height: auto;
+  border-radius: var(--radius-sm);
+  object-fit: contain;
+  /* Checkerboard so transparent PNG/WebP areas are visible */
+  background-color: var(--hover);
+  background-image: linear-gradient(45deg, var(--line) 25%, transparent 25%),
+    linear-gradient(-45deg, var(--line) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, var(--line) 75%),
+    linear-gradient(-45deg, transparent 75%, var(--line) 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+}
+
+.previewBox p {
+  margin: var(--gap-sm) 0 0;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+
+.downloadButton {
+  background: var(--accent);
+  color: var(--accent-contrast);
+  border: none;
+  padding: 0.55rem 1.25rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: opacity var(--fast) var(--ease);
+  margin-top: var(--gap-md);
+}
+
+.downloadButton:hover:not(:disabled) {
+  opacity: 0.85;
+}
+
+.downloadButton:disabled {
+  background: var(--line-strong);
+  cursor: not-allowed;
+}
+
+@media (max-width: 900px) {
+  .workspace {
+    flex-direction: column;
+  }
+
+  .editorColumn,
+  .previewColumn {
+    flex: 1 1 auto;
+    width: 100%;
+  }
+
+  .previewColumn {
+    position: static;
+  }
+
+  .previewBox {
+    max-width: 420px;
+  }
+}
+
+@media (max-width: 480px) {
+  .main {
+    padding: 2.5rem 1.25rem 3.5rem;
+  }
+
+  .title {
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .control {
+    min-width: 100%;
+  }
+
+  .actions {
+    margin-left: 0;
+    align-self: stretch;
+  }
+}

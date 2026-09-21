@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
 import styles from "./style.module.css";
-
 import type { ImageFormat } from "@/components/ConversionControls";
 import UploadArea from "@/components/UploadArea";
 import ConversionControls from "@/components/ConversionControls";
@@ -31,6 +30,7 @@ export default function Home() {
   const [convertedSize, setConvertedSize] = useState<string>("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [targetFormat, setTargetFormat] = useState<ImageFormat>("webp");
+  const convertedUrlRef = useRef<string | null>(null);
   const t = useTranslations("HomePage");
 
   const formatFileSize = (bytes: number): string => {
@@ -68,10 +68,14 @@ export default function Home() {
         canvas.toBlob(
           (blob) => {
             if (blob) {
-              if (convertedImage) {
-                URL.revokeObjectURL(convertedImage);
+              // Revoke through a ref: the state value captured in this closure
+              // is from the render that started the conversion (usually null),
+              // so reading it here would never release the previous URL.
+              if (convertedUrlRef.current) {
+                URL.revokeObjectURL(convertedUrlRef.current);
               }
               const url = URL.createObjectURL(blob);
+              convertedUrlRef.current = url;
               setConvertedImage(url);
               setConvertedSize(formatFileSize(blob.size));
             }
@@ -103,14 +107,16 @@ export default function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [quality, targetFormat]);
 
-  // Cleanup URL object on unmount or when a new one is created
+  // Release the final object URL on unmount. Keyed on [] so it reads the ref
+  // at unmount time instead of revoking the URL the preview is still showing.
   useEffect(() => {
     return () => {
-      if (convertedImage) {
-        URL.revokeObjectURL(convertedImage);
+      if (convertedUrlRef.current) {
+        URL.revokeObjectURL(convertedUrlRef.current);
+        convertedUrlRef.current = null;
       }
     };
-  }, [convertedImage]);
+  }, []);
 
   const downloadConvertedImage = () => {
     if (convertedImage && selectedFile) {
@@ -125,6 +131,7 @@ export default function Home() {
   return (
     <main className={styles.main}>
       <h1 className={styles.title}>{t("title")}</h1>
+      <p className={styles.subtitle}>{t("subtitle")}</p>
 
       <UploadArea onFileSelect={handleFileSelect} t={t} />
 
