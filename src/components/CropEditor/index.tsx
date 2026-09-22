@@ -27,7 +27,7 @@ interface CropEditorProps {
 }
 
 type ResizeHandle = "nw" | "ne" | "sw" | "se" | "n" | "s" | "w" | "e";
-type DragMode = "move" | ResizeHandle;
+type DragMode = "move" | "draw" | ResizeHandle;
 
 interface DragState {
   mode: DragMode;
@@ -35,6 +35,9 @@ interface DragState {
   startY: number;
   startCrop: CropRect;
   pointerId: number;
+  /** Normalized origin of a "draw" gesture (pointer-down position). */
+  originX: number;
+  originY: number;
 }
 
 const MIN_SIZE = 0.02;
@@ -128,6 +131,59 @@ function resizeRect(
   return { x, y, width, height };
 }
 
+/**
+ * Build a rect dragged from a fixed origin corner, optionally locking the
+ * normalized aspect ratio, always clamped inside the image bounds.
+ */
+function drawRect(
+  originX: number,
+  originY: number,
+  pointerX: number,
+  pointerY: number,
+  aspect: number | null,
+  minW: number,
+  minH: number
+): CropRect {
+  const dirX = pointerX >= originX ? 1 : -1;
+  const dirY = pointerY >= originY ? 1 : -1;
+
+  let width = Math.max(Math.abs(pointerX - originX), minW);
+  let height = Math.max(Math.abs(pointerY - originY), minH);
+
+  if (aspect !== null && Number.isFinite(aspect) && aspect > 0) {
+    // The axis the pointer travelled further along drives the other one.
+    if (Math.abs(pointerX - originX) >= Math.abs(pointerY - originY)) {
+      height = width / aspect;
+    } else {
+      width = height * aspect;
+    }
+  }
+
+  // Never grow past the image edge in the dragged direction.
+  const maxW = dirX === 1 ? 1 - originX : originX;
+  const maxH = dirY === 1 ? 1 - originY : originY;
+
+  if (width > maxW) {
+    width = maxW;
+    if (aspect !== null && Number.isFinite(aspect) && aspect > 0) {
+      height = width / aspect;
+    }
+  }
+  if (height > maxH) {
+    height = maxH;
+    if (aspect !== null && Number.isFinite(aspect) && aspect > 0) {
+      width = Math.min(height * aspect, maxW);
+    }
+  }
+
+  return {
+    x: dirX === 1 ? originX : originX - width,
+    y: dirY === 1 ? originY : originY - height,
+    width,
+    height,
+  };
+}
+
 export default function CropEditor({
   imageUrl,
   crop,
@@ -138,6 +194,7 @@ export default function CropEditor({
   t,
 }: CropEditorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const cropBoxRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<DragState | null>(null);
   const [boxSize, setBoxSize] = useState({ width: 0, height: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -158,18 +215,39 @@ export default function CropEditor({
     return () => observer.disconnect();
   }, [imageUrl]);
 
+  const toNormPoint = useCallback(
+    (clientX: number, clientY: number) => {
+      const rect = containerRef.current?.getBoundingClientRect();
+      if (!rect || rect.width === 0 || rect.height === 0) return null;
+      return {
+        x: clamp((clientX - rect.left) / rect.width, 0, 1),
+        y: clamp((clientY - rect.top) / rect.height, 0, 1),
+      };
+    },
+    []
+  );
+
   const beginDrag = (e: React.PointerEvent, mode: DragMode) => {
     if (boxSize.width === 0 || boxSize.height === 0) return;
     if (e.button !== 0 && e.pointerType === "mouse") return;
     e.preventDefault();
     e.stopPropagation();
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    // preventDefault suppresses the focus that normally follows a click, so
+    // focus the selection explicitly to keep arrow-key nudging reachable.
+    if (mode !== "draw") cropBoxRef.current?.focus();
+
+    const origin =
+      mode === "draw" ? toNormPoint(e.clientX, e.clientY) : null;
+
     dragRef.current = {
       mode,
       startX: e.clientX,
       startY: e.clientY,
       startCrop: crop,
       pointerId: e.pointerId,
+      originX: origin?.x ?? 0,
+      originY: origin?.y ?? 0,
     };
     setIsDragging(true);
     onDragStateChange?.(true);
@@ -179,6 +257,23 @@ export default function CropEditor({
     (e: React.PointerEvent) => {
       const drag = dragRef.current;
       if (!drag || drag.pointerId !== e.pointerId) return;
+
+      if (drag.mode === "draw") {
+        const point = toNormPoint(e.clientX, e.clientY);
+        if (!point) return;
+        onCropChange(
+          drawRect(
+            drag.originX,
+            drag.originY,
+            point.x,
+            point.y,
+            aspect,
+            naturalSize.width ? 1 / naturalSize.width : MIN_SIZE,
+            naturalSize.height ? 1 / naturalSize.height : MIN_SIZE
+          )
+        );
+        return;
+      }
 
       const dx = (e.clientX - drag.startX) / boxSize.width;
       const dy = (e.clientY - drag.startY) / boxSize.height;
@@ -205,7 +300,7 @@ export default function CropEditor({
 
       onCropChange(next);
     },
-    [aspect, boxSize.height, boxSize.width, onCropChange]
+    [aspect, boxSize.height, boxSize.width, naturalSize, onCropChange, toNormPoint]
   );
 
   const endDrag = (e: React.PointerEvent) => {
@@ -214,6 +309,83 @@ export default function CropEditor({
     dragRef.current = null;
     setIsDragging(false);
     onDragStateChange?.(false);
+
+    // A bare click on the image (no real drag distance) must not collapse
+    // the selection — restore the rect the user had before the gesture.
+    // A deliberately thin strip (small on one axis only) is kept intact.
+    if (drag.mode === "draw") {
+      const tinyW = naturalSize.width
+        ? crop.width * naturalSize.width < 2
+        : crop.width < MIN_SIZE;
+      const tinyH = naturalSize.height
+        ? crop.height * naturalSize.height < 2
+        : crop.height < MIN_SIZE;
+      if (tinyW && tinyH) onCropChange(drag.startCrop);
+    }
+  };
+
+  /**
+   * Keyboard nudging for precise control:
+   * arrow keys move the box by 1 source pixel (Shift: 10 px),
+   * Alt + arrow resizes it by the same step with the top-left corner anchored.
+   */
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    const deltas: Record<string, [number, number]> = {
+      ArrowLeft: [-1, 0],
+      ArrowRight: [1, 0],
+      ArrowUp: [0, -1],
+      ArrowDown: [0, 1],
+    };
+    const dir = deltas[e.key];
+    if (!dir) return;
+    if (!naturalSize.width || !naturalSize.height) return;
+    e.preventDefault();
+
+    const step = e.shiftKey ? 10 : 1;
+    const dx = (dir[0] * step) / naturalSize.width;
+    const dy = (dir[1] * step) / naturalSize.height;
+    const minW = 1 / naturalSize.width;
+    const minH = 1 / naturalSize.height;
+
+    if (!e.altKey) {
+      onCropChange({
+        ...crop,
+        x: clamp(crop.x + dx, 0, 1 - crop.width),
+        y: clamp(crop.y + dy, 0, 1 - crop.height),
+      });
+      return;
+    }
+
+    let next: CropRect = { ...crop };
+    if (dir[0] !== 0) {
+      next.width = clamp(crop.width + dx, minW, 1 - crop.x);
+      if (aspect !== null && Number.isFinite(aspect) && aspect > 0) {
+        next.height = next.width / aspect;
+      }
+    } else {
+      next.height = clamp(crop.height + dy, minH, 1 - crop.y);
+      if (aspect !== null && Number.isFinite(aspect) && aspect > 0) {
+        next.width = next.height * aspect;
+      }
+    }
+
+    if (aspect !== null && Number.isFinite(aspect) && aspect > 0) {
+      // Fit the derived rect back inside the image without breaking the ratio.
+      const maxW = 1 - next.x;
+      const maxH = 1 - next.y;
+      let scale = 1;
+      if (next.width > maxW) scale = Math.min(scale, maxW / next.width);
+      if (next.height > maxH) scale = Math.min(scale, maxH / next.height);
+      if (scale < 1) {
+        next = {
+          ...next,
+          width: Math.max(next.width * scale, minW),
+          height: Math.max(next.height * scale, minH),
+        };
+      }
+    }
+
+    onCropChange(next);
   };
 
   const toPixels = (value: number, total: number) => value * total;
@@ -230,6 +402,7 @@ export default function CropEditor({
       <div
         ref={containerRef}
         className={`${styles.stage} ${isDragging ? styles.stageDragging : ""}`}
+        onPointerDown={(e) => beginDrag(e, "draw")}
         onPointerMove={handlePointerMove}
         onPointerUp={endDrag}
         onPointerCancel={endDrag}
@@ -243,9 +416,14 @@ export default function CropEditor({
         />
 
         <div
+          ref={cropBoxRef}
           className={styles.cropBox}
           style={boxStyle}
+          tabIndex={0}
+          role="group"
+          aria-label={t("selection_aria")}
           onPointerDown={(e) => beginDrag(e, "move")}
+          onKeyDown={handleKeyDown}
         >
           <div className={styles.gridLines} />
 

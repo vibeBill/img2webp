@@ -52,6 +52,59 @@
   gap: var(--gap-xs);
 }
 
+.precisionGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(120px, 1fr));
+  gap: var(--gap-xs) var(--gap-sm);
+}
+
+.precisionField {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.precisionField label {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--ink-faint);
+}
+
+.precisionInputWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.precisionInputWrap input {
+  width: 100%;
+  padding: 0.4rem 2rem 0.4rem 0.6rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  font-size: 0.9rem;
+  color: var(--ink);
+}
+
+.precisionInputWrap input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.precisionUnit {
+  position: absolute;
+  right: 0.6rem;
+  font-size: 0.75rem;
+  color: var(--ink-faint);
+  pointer-events: none;
+}
+
+.precisionNote {
+  margin: 0;
+  font-size: 0.72rem;
+  color: var(--ink-faint);
+}
+
 .ratioButton {
   padding: 0.35rem 0.7rem;
   border: 1px solid var(--line-strong);
